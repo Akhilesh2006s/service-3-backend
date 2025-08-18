@@ -1,0 +1,62 @@
+{
+  "1754898047984": {
+    "_id": "1754898047984",
+    "student": "test-user-id",
+    "type": "milestone",
+    "submissionType": "voice",
+    "milestone": 1,
+    "voiceRecording": {
+      "audioBlob": "test-audio-data",
+      "duration": 10,
+      "fileName": "test-recording.wav",
+      "submittedAt": "2025-08-11T07:40:47.984Z"
+    },
+    "stepTitle": "Test Step",
+    "lessonId": "test-lesson",
+    "lessonTitle": "Test Lesson",
+    "status": "pending",
+    "submittedAt": "2025-08-11T07:40:47.984Z",
+    "createdAt": "2025-08-11T07:40:47.984Z",
+    "updatedAt": "2025-08-11T07:40:47.984Z"
+  },
+  "1754898414451": {
+    "_id": "1754898414451",
+    "student": "test-user-id",
+    "type": "milestone",
+    "submissionType": "voice",
+    "milestone": 1,
+    "voiceRecording": {
+      "audioBlob": "test-audio-data",
+      "duration": 10,
+      "fileName": "test-recording.wav",
+      "submittedAt": "2025-08-11T07:46:54.451Z"
+    },
+    "stepTitle": "Test Step",
+    "lessonId": "test-lesson",
+    "lessonTitle": "Test Lesson",
+    "status": "pending",
+    "submittedAt": "2025-08-11T07:46:54.451Z",
+    "createdAt": "2025-08-11T07:46:54.451Z",
+    "updatedAt": "2025-08-11T07:46:54.451Z"
+  },
+  "1754898528715": {
+    "_id": "1754898528715",
+    "student": "507f1f77bcf86cd799439011",
+    "type": "milestone",
+    "submissionType": "voice",
+    "milestone": 1,
+    "voiceRecording": {
+      "audioBlob": "real-user-audio-data",
+      "duration": 15,
+      "fileName": "real-user-recording.wav",
+      "submittedAt": "2025-08-11T07:48:48.715Z"
+    },
+    "stepTitle": "Telugu Basics - Lesson 1: Vowels",
+    "lessonId": "lesson-1",
+    "lessonTitle": "Telugu Basics - Lesson 1: Vowels (అ నుండి అహా వరకు)",
+    "status": "pending",
+    "submittedAt": "2025-08-11T07:48:48.715Z",
+    "createdAt": "2025-08-11T07:48:48.715Z",
+    "updatedAt": "2025-08-11T07:48:48.715Z"
+  }
+}

@@ -1,0 +1,14 @@
+[
+  {
+    "_id": "1754466849097",
+    "name": "Akhilesh S",
+    "email": "akhileshsamayamanthula@gmail.com",
+    "phone": "9390203316",
+    "password": "***hidden***",
+    "role": "evaluator",
+    "isVerified": true,
+    "isActive": true,
+    "createdAt": "2025-08-06T07:54:09.097Z",
+    "updatedAt": "2025-08-06T07:54:09.097Z"
+  }
+]
