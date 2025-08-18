@@ -47,17 +47,38 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
   'http://localhost:8080',
   'http://192.168.1.7:8080',
   'http://192.168.1.7:3000',
-  'http://192.168.1.7:5173'
+  'http://192.168.1.7:5173',
+  'https://service-3-frontend.vercel.app',
+  'https://service-3-frontend-git-main-akhilesh2006s.vercel.app'
 ];
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      return callback(null, true);
     }
+    
+    // Check if origin is in allowed origins
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Allow any Vercel subdomain for your project
+    if (origin.includes('vercel.app') && origin.includes('service-3-frontend')) {
+      return callback(null, true);
+    }
+    
+    // Allow any Railway subdomain for your backend
+    if (origin.includes('railway.app') && origin.includes('service-3-backend')) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
+    callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Rate limiting - More lenient for development
