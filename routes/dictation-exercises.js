@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import { auth } from '../middleware/auth.js';
+import { requireRole } from '../middleware/requireRole.js';
+import DictationExercise from '../models/DictationExercise.js';
+
 const router = express.Router();
-const auth = require('../middleware/auth');
-const requireRole = require('../middleware/requireRole');
-const DictationExercise = require('../models/DictationExercise');
 
 // Create dictation exercise (Trainer only)
 router.post('/', auth, requireRole(['trainer']), async (req, res) => {
@@ -339,4 +340,4 @@ router.get('/difficulty/:difficulty', auth, requireRole(['learner']), async (req
   }
 });
 
-module.exports = router;
+export default router;
