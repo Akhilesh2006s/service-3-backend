@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const dictationExerciseSchema = new mongoose.Schema({
   title: {
@@ -65,4 +65,4 @@ const dictationExerciseSchema = new mongoose.Schema({
 dictationExerciseSchema.index({ difficulty: 1, isPublished: 1, isActive: 1 });
 dictationExerciseSchema.index({ createdBy: 1 });
 
-module.exports = mongoose.model('DictationExercise', dictationExerciseSchema);
+export default mongoose.model('DictationExercise', dictationExerciseSchema);
