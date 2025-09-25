@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { auth, requireRole } from '../middleware/auth.js';
 import { fileURLToPath } from 'url';
+import SentenceFormationExercise from '../models/SentenceFormationExercise.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -229,20 +230,34 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
       return exercise;
     });
 
-    // TODO: Save to database
-    // For now, we'll just return the processed data
-    // In a real implementation, you would save this to your database
+    // Save to database
+    console.log('Processed exercises:', processedData);
+    
+    // Save exercises to database
+    const savedExercises = [];
+    for (const exercise of processedData) {
+      try {
+        const newExercise = new SentenceFormationExercise({
+          ...exercise,
+          createdBy: req.user.id
+        });
+        const saved = await newExercise.save();
+        savedExercises.push(saved);
+      } catch (error) {
+        console.error('Error saving exercise:', error);
+      }
+    }
     
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
 
     res.json({
       success: true,
-      message: `Successfully processed ${processedData.length} exercises`,
+      message: `Successfully processed and saved ${savedExercises.length} exercises`,
       data: {
         exerciseType,
-        processedCount: processedData.length,
-        exercises: processedData
+        processedCount: savedExercises.length,
+        exercises: savedExercises
       }
     });
 
@@ -267,55 +282,6 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
 });
 
 // Get exercises endpoint
-router.get('/exercises/:type', auth, requireRole(['trainer', 'admin']), async (req, res) => {
-  try {
-    const { type } = req.params;
-    
-    // For now, return mock data since we don't have a database yet
-    // In a real implementation, you would fetch from your database
-    const mockExercises = [
-      {
-        _id: '1',
-        sentenceType: 'te-en',
-        sourceSentence: 'నేను పాఠశాలకు వెళుతున్నాను',
-        targetMeaning: 'I am going to school',
-        difficulty: 'easy',
-        words: {
-          original: ['నేను', 'పాఠశాలకు', 'వెళుతున్నాను'],
-          jumbled: ['వెళుతున్నాను', 'నేను', 'పాఠశాలకు'],
-          correctOrder: [1, 0, 2]
-        },
-        isActive: true,
-        createdAt: new Date().toISOString()
-      },
-      {
-        _id: '2',
-        sentenceType: 'en-te',
-        sourceSentence: 'I am going to school',
-        targetMeaning: 'నేను పాఠశాలకు వెళుతున్నాను',
-        difficulty: 'easy',
-        words: {
-          original: ['I', 'am', 'going', 'to', 'school'],
-          jumbled: ['school', 'I', 'am', 'going', 'to'],
-          correctOrder: [1, 2, 3, 4, 0]
-        },
-        isActive: true,
-        createdAt: new Date().toISOString()
-      }
-    ];
-
-    res.json({
-      success: true,
-      data: mockExercises
-    });
-  } catch (error) {
-    console.error('Error fetching exercises:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching exercises'
-    });
-  }
-});
 
 // Get CSV template endpoint
 router.get('/template/:type', auth, requireRole(['trainer', 'admin']), (req, res) => {
@@ -353,29 +319,35 @@ router.get('/exercises/:type', auth, requireRole(['trainer', 'admin']), async (r
     const { type } = req.params;
     const { page = 1, limit = 10, difficulty } = req.query;
     
-    // TODO: Implement database query to get exercises
-    // For now, return mock data
-    const mockExercises = [
-      {
-        id: '1',
-        type: type,
-        difficulty: 'easy',
-        createdAt: new Date().toISOString(),
-        createdBy: req.user.id,
-        // Add other fields based on type
-      }
-    ];
+    // Build query
+    const query = { isActive: true };
+    
+    // Add difficulty filter if provided
+    if (difficulty && difficulty !== 'all') {
+      query.difficulty = difficulty;
+    }
+    
+    // Calculate pagination
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    // Fetch exercises from database
+    const exercises = await SentenceFormationExercise.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .populate('createdBy', 'name email');
+    
+    // Get total count
+    const total = await SentenceFormationExercise.countDocuments(query);
     
     res.json({
       success: true,
-      data: {
-        exercises: mockExercises,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: mockExercises.length,
-          pages: Math.ceil(mockExercises.length / parseInt(limit))
-        }
+      data: exercises,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit))
       }
     });
     
