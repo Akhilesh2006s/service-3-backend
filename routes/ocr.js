@@ -31,6 +31,7 @@ router.post('/analyze-handwriting', async (req, res) => {
     
     console.log('Image data length:', base64Data.length);
     console.log('Image data preview:', base64Data.substring(0, 50) + '...');
+    console.log('Correct word:', correctWord);
 
     // Call Google Cloud Vision API with both TEXT_DETECTION and DOCUMENT_TEXT_DETECTION
     const response = await fetch(
@@ -57,7 +58,10 @@ router.post('/analyze-handwriting', async (req, res) => {
                 }
               ],
               imageContext: {
-                languageHints: ['te', 'en'] // Telugu and English language hints
+                languageHints: ['te', 'en'], // Telugu and English language hints
+                textDetectionParams: {
+                  enableTextDetectionConfidenceScore: true
+                }
               }
             }
           ]

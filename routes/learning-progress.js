@@ -7,12 +7,12 @@ const router = express.Router();
 // Get user's learning progress
 router.get('/', auth, async (req, res) => {
   try {
-    let progress = await LearningProgress.findOne({ userId: req.user.id });
+    let progress = await LearningProgress.findOne({ userId: req.user.userId || req.user._id });
     
     if (!progress) {
       // Create new progress record if it doesn't exist
       progress = new LearningProgress({
-        userId: req.user.id
+        userId: req.user.userId || req.user._id
       });
       await progress.save();
     }
@@ -42,11 +42,11 @@ router.post('/dictation', auth, async (req, res) => {
       });
     }
 
-    let progress = await LearningProgress.findOne({ userId: req.user.id });
+    let progress = await LearningProgress.findOne({ userId: req.user.userId || req.user._id });
     
     if (!progress) {
       progress = new LearningProgress({
-        userId: req.user.id
+        userId: req.user.userId || req.user._id
       });
     }
 
@@ -79,11 +79,11 @@ router.post('/sentence-formation', auth, async (req, res) => {
       });
     }
 
-    let progress = await LearningProgress.findOne({ userId: req.user.id });
+    let progress = await LearningProgress.findOne({ userId: req.user.userId || req.user._id });
     
     if (!progress) {
       progress = new LearningProgress({
-        userId: req.user.id
+        userId: req.user.userId || req.user._id
       });
     }
 
@@ -116,11 +116,11 @@ router.post('/spelling', auth, async (req, res) => {
       });
     }
 
-    let progress = await LearningProgress.findOne({ userId: req.user.id });
+    let progress = await LearningProgress.findOne({ userId: req.user.userId || req.user._id });
     
     if (!progress) {
       progress = new LearningProgress({
-        userId: req.user.id
+        userId: req.user.userId || req.user._id
       });
     }
 
@@ -153,11 +153,11 @@ router.post('/handwriting', auth, async (req, res) => {
       });
     }
 
-    let progress = await LearningProgress.findOne({ userId: req.user.id });
+    let progress = await LearningProgress.findOne({ userId: req.user.userId || req.user._id });
     
     if (!progress) {
       progress = new LearningProgress({
-        userId: req.user.id
+        userId: req.user.userId || req.user._id
       });
     }
 
@@ -235,7 +235,7 @@ router.post('/reset/:module', auth, async (req, res) => {
       });
     }
 
-    let progress = await LearningProgress.findOne({ userId: req.user.id });
+    let progress = await LearningProgress.findOne({ userId: req.user.userId || req.user._id });
     
     if (!progress) {
       return res.status(404).json({
