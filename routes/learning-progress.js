@@ -144,6 +144,9 @@ router.post('/spelling', auth, async (req, res) => {
 // Update handwriting progress
 router.post('/handwriting', auth, async (req, res) => {
   try {
+    console.log('Handwriting progress request:', req.body);
+    console.log('User from auth:', req.user);
+    
     const { exerciseId, isCorrect, attempts = 1 } = req.body;
 
     if (exerciseId === undefined || isCorrect === undefined) {
@@ -153,7 +156,10 @@ router.post('/handwriting', auth, async (req, res) => {
       });
     }
 
-    let progress = await LearningProgress.findOne({ userId: req.user.userId || req.user._id });
+    const userId = req.user.userId || req.user._id;
+    console.log('Looking for progress with userId:', userId);
+    
+    let progress = await LearningProgress.findOne({ userId });
     
     if (!progress) {
       progress = new LearningProgress({
@@ -199,7 +205,9 @@ router.post('/handwriting', auth, async (req, res) => {
     progress.overallStats.lastActivity = new Date();
     progress.overallStats.averageScore = progress.calculateOverallAverage();
 
+    console.log('Saving progress...');
     await progress.save();
+    console.log('Progress saved successfully');
 
     res.json({
       success: true,
@@ -215,9 +223,12 @@ router.post('/handwriting', auth, async (req, res) => {
     });
   } catch (error) {
     console.error('Update handwriting progress error:', error);
+    console.error('Error details:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       success: false,
-      message: 'Failed to update handwriting progress'
+      message: 'Failed to update handwriting progress',
+      error: error.message
     });
   }
 });
