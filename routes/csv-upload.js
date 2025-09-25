@@ -29,9 +29,12 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   fileFilter: (req, file, cb) => {
+    console.log('Multer fileFilter - File:', file.originalname, 'Mimetype:', file.mimetype);
     if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      console.log('Multer fileFilter - File accepted');
       cb(null, true);
     } else {
+      console.log('Multer fileFilter - File rejected');
       cb(new Error('Only CSV files are allowed'), false);
     }
   },
@@ -87,6 +90,28 @@ const validateCSVData = (data, type) => {
       });
       break;
       
+    case 'te-en':
+      data.forEach((row, index) => {
+        if (!row.telugu_sentence || !row.english_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (telugu_sentence, english_meaning, difficulty)`);
+        }
+        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
+          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
+        }
+      });
+      break;
+      
+    case 'en-te':
+      data.forEach((row, index) => {
+        if (!row.english_sentence || !row.telugu_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (english_sentence, telugu_meaning, difficulty)`);
+        }
+        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
+          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
+        }
+      });
+      break;
+      
     default:
       errors.push('Invalid exercise type');
   }
@@ -113,8 +138,24 @@ const processSentenceForExercise = (sentence, type) => {
 };
 
 // Upload CSV file endpoint
-router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('file'), async (req, res) => {
+router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      console.error('Multer error:', err);
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'File upload error'
+      });
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
+    console.log('Upload request received:');
+    console.log('File:', req.file);
+    console.log('Body:', req.body);
+    console.log('Headers:', req.headers);
+    
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -124,10 +165,10 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('f
 
     const { exerciseType } = req.body;
     
-    if (!exerciseType || !['dictation', 'sentence-formation'].includes(exerciseType)) {
+    if (!exerciseType || !['dictation', 'sentence-formation', 'te-en', 'en-te'].includes(exerciseType)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation'
+        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation, te-en, en-te'
       });
     }
 
@@ -168,6 +209,20 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('f
           exercise.sourceSentence = row.source_sentence;
           exercise.targetMeaning = row.target_meaning;
           exercise.words = processSentenceForExercise(row.source_sentence, row.sentence_type);
+          break;
+          
+        case 'te-en':
+          exercise.sentenceType = 'te-en';
+          exercise.sourceSentence = row.telugu_sentence;
+          exercise.targetMeaning = row.english_meaning;
+          exercise.words = processSentenceForExercise(row.telugu_sentence, 'te-en');
+          break;
+          
+        case 'en-te':
+          exercise.sentenceType = 'en-te';
+          exercise.sourceSentence = row.english_sentence;
+          exercise.targetMeaning = row.telugu_meaning;
+          exercise.words = processSentenceForExercise(row.english_sentence, 'en-te');
           break;
       }
 
