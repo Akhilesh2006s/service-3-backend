@@ -21,6 +21,7 @@ import teluguSpellingRoutes from './routes/telugu-spelling.js';
 import learningProgressRoutes from './routes/learning-progress.js';
 import voiceExaminationRoutes from './routes/voice-examinations.js';
 import dictationExerciseRoutes from './routes/dictation-exercises.js';
+import csvUploadRoutes from './routes/csv-upload.js';
 
 // Load environment variables
 dotenv.config();
@@ -129,6 +130,7 @@ app.use('/api/telugu-spelling', teluguSpellingRoutes);
 app.use('/api/learning-progress', learningProgressRoutes);
 app.use('/api/voice-examinations', voiceExaminationRoutes);
 app.use('/api/dictation-exercises', dictationExerciseRoutes);
+app.use('/api/csv-upload', csvUploadRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

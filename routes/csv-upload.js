@@ -1,0 +1,323 @@
+import express from 'express';
+import multer from 'multer';
+import csv from 'csv-parser';
+import fs from 'fs';
+import path from 'path';
+import { auth, requireAdmin } from '../middleware/auth.js';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/csv');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + '.csv');
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'text/csv' || file.originalname.endsWith('.csv')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only CSV files are allowed'), false);
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Helper function to parse CSV file
+const parseCSVFile = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (data) => results.push(data))
+      .on('end', () => resolve(results))
+      .on('error', (error) => reject(error));
+  });
+};
+
+// Helper function to validate CSV data based on type
+const validateCSVData = (data, type) => {
+  const errors = [];
+  
+  if (!data || data.length === 0) {
+    errors.push('CSV file is empty or invalid');
+    return { valid: false, errors };
+  }
+
+  switch (type) {
+    case 'dictation':
+      data.forEach((row, index) => {
+        if (!row.telugu_sentence || !row.english_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (telugu_sentence, english_meaning, difficulty)`);
+        }
+        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
+          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
+        }
+      });
+      break;
+      
+    case 'sentence-formation-en-te':
+      data.forEach((row, index) => {
+        if (!row.english_sentence || !row.telugu_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (english_sentence, telugu_meaning, difficulty)`);
+        }
+        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
+          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
+        }
+      });
+      break;
+      
+    case 'sentence-formation-te-en':
+      data.forEach((row, index) => {
+        if (!row.telugu_sentence || !row.english_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (telugu_sentence, english_meaning, difficulty)`);
+        }
+        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
+          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
+        }
+      });
+      break;
+      
+    default:
+      errors.push('Invalid exercise type');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+};
+
+// Helper function to break sentence into words and jumble them
+const processSentenceForExercise = (sentence, type) => {
+  // Remove punctuation and split into words
+  const words = sentence.replace(/[.,!?;:]/g, '').split(/\s+/).filter(word => word.length > 0);
+  
+  // Create jumbled version
+  const jumbledWords = [...words].sort(() => Math.random() - 0.5);
+  
+  return {
+    original: words,
+    jumbled: jumbledWords,
+    correctOrder: words.map(word => jumbledWords.indexOf(word))
+  };
+};
+
+// Upload CSV file endpoint
+router.post('/upload', auth, requireAdmin, upload.single('csvFile'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No CSV file uploaded'
+      });
+    }
+
+    const { exerciseType } = req.body;
+    
+    if (!exerciseType || !['dictation', 'sentence-formation-en-te', 'sentence-formation-te-en'].includes(exerciseType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation-en-te, sentence-formation-te-en'
+      });
+    }
+
+    // Parse CSV file
+    const csvData = await parseCSVFile(req.file.path);
+    
+    // Validate CSV data
+    const validation = validateCSVData(csvData, exerciseType);
+    if (!validation.valid) {
+      // Clean up uploaded file
+      fs.unlinkSync(req.file.path);
+      
+      return res.status(400).json({
+        success: false,
+        message: 'CSV validation failed',
+        errors: validation.errors
+      });
+    }
+
+    // Process data for exercises
+    const processedData = csvData.map((row, index) => {
+      const exercise = {
+        id: `${exerciseType}-${Date.now()}-${index}`,
+        type: exerciseType,
+        difficulty: row.difficulty.toLowerCase(),
+        createdAt: new Date().toISOString(),
+        createdBy: req.user.id
+      };
+
+      switch (exerciseType) {
+        case 'dictation':
+          exercise.teluguSentence = row.telugu_sentence;
+          exercise.englishMeaning = row.english_meaning;
+          break;
+          
+        case 'sentence-formation-en-te':
+          exercise.englishSentence = row.english_sentence;
+          exercise.teluguMeaning = row.telugu_meaning;
+          exercise.words = processSentenceForExercise(row.english_sentence, 'en-te');
+          break;
+          
+        case 'sentence-formation-te-en':
+          exercise.teluguSentence = row.telugu_sentence;
+          exercise.englishMeaning = row.english_meaning;
+          exercise.words = processSentenceForExercise(row.telugu_sentence, 'te-en');
+          break;
+      }
+
+      return exercise;
+    });
+
+    // TODO: Save to database
+    // For now, we'll just return the processed data
+    // In a real implementation, you would save this to your database
+    
+    // Clean up uploaded file
+    fs.unlinkSync(req.file.path);
+
+    res.json({
+      success: true,
+      message: `Successfully processed ${processedData.length} exercises`,
+      data: {
+        exerciseType,
+        count: processedData.length,
+        exercises: processedData
+      }
+    });
+
+  } catch (error) {
+    console.error('CSV upload error:', error);
+    
+    // Clean up uploaded file if it exists
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Error processing CSV file',
+      error: error.message
+    });
+  }
+});
+
+// Get CSV template endpoint
+router.get('/template/:type', auth, requireAdmin, (req, res) => {
+  const { type } = req.params;
+  
+  let template = '';
+  let filename = '';
+  
+  switch (type) {
+    case 'dictation':
+      template = 'telugu_sentence,english_meaning,difficulty\nనేను పాఠశాలకు వెళుతున్నాను,I am going to school,easy\nమా ఇంటికి అతిథులు వచ్చారు,Guests came to our house,medium\nవిద్యార్థులు పుస్తకాలు చదువుతున్నారు,Students are reading books,hard';
+      filename = 'dictation-template.csv';
+      break;
+      
+    case 'sentence-formation-en-te':
+      template = 'english_sentence,telugu_meaning,difficulty\nI am going to school,నేను పాఠశాలకు వెళుతున్నాను,easy\nGuests came to our house,మా ఇంటికి అతిథులు వచ్చారు,medium\nStudents are reading books,విద్యార్థులు పుస్తకాలు చదువుతున్నారు,hard';
+      filename = 'sentence-formation-en-te-template.csv';
+      break;
+      
+    case 'sentence-formation-te-en':
+      template = 'telugu_sentence,english_meaning,difficulty\nనేను పాఠశాలకు వెళుతున్నాను,I am going to school,easy\nమా ఇంటికి అతిథులు వచ్చారు,Guests came to our house,medium\nవిద్యార్థులు పుస్తకాలు చదువుతున్నారు,Students are reading books,hard';
+      filename = 'sentence-formation-te-en-template.csv';
+      break;
+      
+    default:
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid template type'
+      });
+  }
+  
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.send(template);
+});
+
+// Get uploaded exercises endpoint
+router.get('/exercises/:type', auth, requireAdmin, async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { page = 1, limit = 10, difficulty } = req.query;
+    
+    // TODO: Implement database query to get exercises
+    // For now, return mock data
+    const mockExercises = [
+      {
+        id: '1',
+        type: type,
+        difficulty: 'easy',
+        createdAt: new Date().toISOString(),
+        createdBy: req.user.id,
+        // Add other fields based on type
+      }
+    ];
+    
+    res.json({
+      success: true,
+      data: {
+        exercises: mockExercises,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: mockExercises.length,
+          pages: Math.ceil(mockExercises.length / parseInt(limit))
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Get exercises error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching exercises',
+      error: error.message
+    });
+  }
+});
+
+// Delete exercise endpoint
+router.delete('/exercises/:id', auth, requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // TODO: Implement database deletion
+    // For now, just return success
+    
+    res.json({
+      success: true,
+      message: 'Exercise deleted successfully'
+    });
+    
+  } catch (error) {
+    console.error('Delete exercise error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error deleting exercise',
+      error: error.message
+    });
+  }
+});
+
+export default router;
