@@ -3,7 +3,7 @@ import multer from 'multer';
 import csv from 'csv-parser';
 import fs from 'fs';
 import path from 'path';
-import { auth, requireAdmin } from '../middleware/auth.js';
+import { auth, requireRole } from '../middleware/auth.js';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -121,7 +121,7 @@ const processSentenceForExercise = (sentence, type) => {
 };
 
 // Upload CSV file endpoint
-router.post('/upload', auth, requireAdmin, upload.single('csvFile'), async (req, res) => {
+router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('csvFile'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -221,7 +221,7 @@ router.post('/upload', auth, requireAdmin, upload.single('csvFile'), async (req,
 });
 
 // Get CSV template endpoint
-router.get('/template/:type', auth, requireAdmin, (req, res) => {
+router.get('/template/:type', auth, requireRole(['trainer', 'admin']), (req, res) => {
   const { type } = req.params;
   
   let template = '';
@@ -256,7 +256,7 @@ router.get('/template/:type', auth, requireAdmin, (req, res) => {
 });
 
 // Get uploaded exercises endpoint
-router.get('/exercises/:type', auth, requireAdmin, async (req, res) => {
+router.get('/exercises/:type', auth, requireRole(['trainer', 'admin']), async (req, res) => {
   try {
     const { type } = req.params;
     const { page = 1, limit = 10, difficulty } = req.query;
@@ -298,7 +298,7 @@ router.get('/exercises/:type', auth, requireAdmin, async (req, res) => {
 });
 
 // Delete exercise endpoint
-router.delete('/exercises/:id', auth, requireAdmin, async (req, res) => {
+router.delete('/exercises/:id', auth, requireRole(['trainer', 'admin']), async (req, res) => {
   try {
     const { id } = req.params;
     
