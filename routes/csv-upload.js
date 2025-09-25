@@ -569,6 +569,13 @@ router.get('/exercises/:type', auth, requireRole(['trainer', 'admin']), async (r
         .limit(parseInt(limit))
         .populate('createdBy', 'name email');
       total = await VarnamalaExercise.countDocuments(query);
+    } else if (type === 'handwriting') {
+      exercises = await TeluguHandwritingExercise.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('createdBy', 'name email');
+      total = await TeluguHandwritingExercise.countDocuments(query);
     } else {
       exercises = await SentenceFormationExercise.find(query)
         .sort({ createdAt: -1 })
