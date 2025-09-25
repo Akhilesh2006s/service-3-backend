@@ -138,3 +138,4 @@ async function updateAllVarnamalaExercises() {
 
 // Run the update
 updateAllVarnamalaExercises();
+
