@@ -64,8 +64,8 @@ const validateCSVData = (data, type) => {
   switch (type) {
     case 'dictation':
       data.forEach((row, index) => {
-        if (!row.telugu_sentence || !row.english_meaning || !row.difficulty) {
-          errors.push(`Row ${index + 1}: Missing required fields (telugu_sentence, english_meaning, difficulty)`);
+        if (!row.telugu_word || !row.english_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (telugu_word, english_meaning, difficulty)`);
         }
         if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
           errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
@@ -167,7 +167,7 @@ router.post('/upload', auth, requireAdmin, upload.single('csvFile'), async (req,
 
       switch (exerciseType) {
         case 'dictation':
-          exercise.teluguSentence = row.telugu_sentence;
+          exercise.teluguWord = row.telugu_word;
           exercise.englishMeaning = row.english_meaning;
           break;
           
@@ -229,7 +229,7 @@ router.get('/template/:type', auth, requireAdmin, (req, res) => {
   
   switch (type) {
     case 'dictation':
-      template = 'telugu_sentence,english_meaning,difficulty\nనేను పాఠశాలకు వెళుతున్నాను,I am going to school,easy\nమా ఇంటికి అతిథులు వచ్చారు,Guests came to our house,medium\nవిద్యార్థులు పుస్తకాలు చదువుతున్నారు,Students are reading books,hard';
+      template = 'telugu_word,english_meaning,difficulty\nపాఠశాల,school,easy\nఇంటి,house,medium\nపుస్తకం,book,hard';
       filename = 'dictation-template.csv';
       break;
       
