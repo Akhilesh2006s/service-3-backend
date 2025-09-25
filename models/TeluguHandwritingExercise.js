@@ -7,7 +7,7 @@ const teluguHandwritingExerciseSchema = new mongoose.Schema({
   audioUrl: { type: String }, // Optional: for custom audio
   isActive: { type: Boolean, default: true },
   createdAt: { type: Date, default: Date.now },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false, default: null },
   updatedAt: { type: Date, default: Date.now }
 });
 

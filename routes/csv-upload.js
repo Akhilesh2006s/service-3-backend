@@ -421,12 +421,18 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
           console.log('Saved VarnamalaExercise:', saved._id);
         } else if (exerciseType === 'handwriting') {
           console.log('Creating TeluguHandwritingExercise with data:', exercise);
-          const newExercise = new TeluguHandwritingExercise({
+          const exerciseData = {
             teluguWord: exercise.teluguWord,
             englishMeaning: exercise.englishMeaning,
-            difficulty: exercise.difficulty,
-            createdBy: req.user?.id || 'system'
-          });
+            difficulty: exercise.difficulty
+          };
+          
+          // Only add createdBy if it's a valid ObjectId
+          if (req.user?.id) {
+            exerciseData.createdBy = req.user.id;
+          }
+          
+          const newExercise = new TeluguHandwritingExercise(exerciseData);
           saved = await newExercise.save();
           console.log('Saved TeluguHandwritingExercise:', saved._id);
         } else {
