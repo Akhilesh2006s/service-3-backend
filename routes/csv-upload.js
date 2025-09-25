@@ -13,6 +13,41 @@ const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
+// Test endpoint for varnamala debugging
+router.get('/test-varnamala', async (req, res) => {
+  try {
+    // Test VarnamalaExercise model
+    const testExercise = new VarnamalaExercise({
+      teluguWord: 'కమలం',
+      englishMeaning: 'lotus',
+      difficulty: 'easy',
+      letters: {
+        original: ['క', 'మ', 'ల', 'ం'],
+        jumbled: ['ల', 'క', 'ం', 'మ'],
+        correctOrder: [0, 1, 2, 3],
+        randomLetters: ['అ', 'ఆ']
+      },
+      createdBy: 'test-user-id'
+    });
+    
+    res.json({
+      success: true,
+      message: 'Varnamala test endpoint working',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0',
+      modelTest: 'VarnamalaExercise model created successfully',
+      testData: testExercise
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: 'Varnamala test endpoint error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
