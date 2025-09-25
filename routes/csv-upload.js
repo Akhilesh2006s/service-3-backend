@@ -222,9 +222,12 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
 
     // Parse CSV file
     const csvData = await parseCSVFile(req.file.path);
+    console.log('Parsed CSV data:', csvData.length, 'rows');
+    console.log('First few rows:', csvData.slice(0, 3));
     
     // Validate CSV data
     const validation = validateCSVData(csvData, exerciseType);
+    console.log('Validation result:', validation);
     if (!validation.valid) {
       // Clean up uploaded file
       fs.unlinkSync(req.file.path);

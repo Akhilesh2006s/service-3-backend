@@ -17,9 +17,9 @@ const varnamalaExerciseSchema = new mongoose.Schema({
   letters: {
     original: [String], // Individual letters of the word
     jumbled: [String],  // Jumbled letters + random letters for confusion
-    correctOrder: [Number] // Correct order indices
+    correctOrder: [Number], // Correct order indices
+    randomLetters: [String] // Additional random letters for confusion
   },
-  randomLetters: [String], // Additional random letters for confusion
   isActive: {
     type: Boolean,
     default: true
