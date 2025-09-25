@@ -241,9 +241,6 @@ const processVarnamalaWord = (teluguWord) => {
   
   console.log(`🔤 Processing word "${teluguWord}" into components:`, letters);
   
-  // Create correct order (0, 1, 2, ...)
-  const correctOrder = letters.map((_, index) => index);
-  
   // Add some random Telugu letters for confusion
   const randomLetters = [
     'అ', 'ఆ', 'ఇ', 'ఈ', 'ఉ', 'ఊ', 'ఋ', 'ఎ', 'ఏ', 'ఐ', 'ఒ', 'ఓ', 'ఔ',
@@ -257,11 +254,22 @@ const processVarnamalaWord = (teluguWord) => {
     .sort(() => Math.random() - 0.5)
     .slice(0, Math.min(4, Math.max(2, Math.floor(Math.random() * 3) + 2)));
   
+  console.log(`🎲 Adding ${selectedRandomLetters.length} random letters:`, selectedRandomLetters);
+  
   // Combine original letters with random letters
   const allLetters = [...letters, ...selectedRandomLetters];
   
   // Create jumbled order (original letters + random letters)
   const jumbledOrder = allLetters.map((_, index) => index).sort(() => Math.random() - 0.5);
+  
+  // Create correct order - find positions of original letters in the jumbled array
+  const correctOrder = letters.map(letter => jumbledOrder.indexOf(allLetters.indexOf(letter)));
+  
+  console.log(`🔤 Final processing for "${teluguWord}":`);
+  console.log(`  Original letters:`, letters);
+  console.log(`  All letters (with random):`, allLetters);
+  console.log(`  Jumbled order:`, jumbledOrder);
+  console.log(`  Correct order indices:`, correctOrder);
   
   return {
     original: letters,
