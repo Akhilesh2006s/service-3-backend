@@ -373,7 +373,13 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
       data: {
         exerciseType,
         processedCount: savedExercises.length,
-        exercises: savedExercises
+        exercises: savedExercises,
+        debug: {
+          csvRows: csvData.length,
+          processedDataLength: processedData.length,
+          validationPassed: validation.valid,
+          validationErrors: validation.errors
+        }
       }
     });
 
