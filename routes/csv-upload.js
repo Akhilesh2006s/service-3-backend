@@ -349,7 +349,7 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
           console.log('Creating VarnamalaExercise with data:', exercise);
           const newExercise = new VarnamalaExercise({
             ...exercise,
-            createdBy: req.user.id
+            createdBy: req.user?.id || 'system'
           });
           saved = await newExercise.save();
           console.log('Saved VarnamalaExercise:', saved._id);
