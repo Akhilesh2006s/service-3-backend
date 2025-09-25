@@ -288,16 +288,19 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
     console.log('Processed exercises:', processedData);
     
     // Save exercises to database
+    console.log('About to save exercises. Type:', exerciseType, 'Count:', processedData.length);
     const savedExercises = [];
     for (const exercise of processedData) {
       try {
         let saved;
         if (exerciseType === 'varnamala') {
+          console.log('Creating VarnamalaExercise with data:', exercise);
           const newExercise = new VarnamalaExercise({
             ...exercise,
             createdBy: req.user.id
           });
           saved = await newExercise.save();
+          console.log('Saved VarnamalaExercise:', saved._id);
         } else {
           const newExercise = new SentenceFormationExercise({
             ...exercise,
@@ -308,6 +311,7 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
         savedExercises.push(saved);
       } catch (error) {
         console.error('Error saving exercise:', error);
+        console.error('Exercise data that failed:', exercise);
       }
     }
     
