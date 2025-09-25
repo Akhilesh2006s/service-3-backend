@@ -7,6 +7,7 @@ import { auth, requireRole } from '../middleware/auth.js';
 import { fileURLToPath } from 'url';
 import SentenceFormationExercise from '../models/SentenceFormationExercise.js';
 import VarnamalaExercise from '../models/VarnamalaExercise.js';
+import TeluguHandwritingExercise from '../models/TeluguHandwritingExercise.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -168,6 +169,17 @@ const validateCSVData = (data, type) => {
       console.log('Varnamala validation errors:', errors);
       break;
       
+    case 'handwriting':
+      data.forEach((row, index) => {
+        if (!row.telugu_word || !row.english_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (telugu_word, english_meaning, difficulty)`);
+        }
+        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
+          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
+        }
+      });
+      break;
+      
     default:
       errors.push('Invalid exercise type');
   }
@@ -304,10 +316,10 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
 
     const { exerciseType } = req.body;
     
-    if (!exerciseType || !['dictation', 'sentence-formation', 'te-en', 'en-te', 'varnamala'].includes(exerciseType)) {
+    if (!exerciseType || !['dictation', 'sentence-formation', 'te-en', 'en-te', 'varnamala', 'handwriting'].includes(exerciseType)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation, te-en, en-te, varnamala'
+        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation, te-en, en-te, varnamala, handwriting'
       });
     }
 
@@ -376,6 +388,11 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
           exercise.targetMeaning = row.telugu_meaning;
           exercise.words = processSentenceForExercise(row.english_sentence, 'en-te');
           break;
+          
+        case 'handwriting':
+          exercise.teluguWord = row.telugu_word;
+          exercise.englishMeaning = row.english_meaning;
+          break;
       }
 
       return exercise;
@@ -401,6 +418,14 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
           });
           saved = await newExercise.save();
           console.log('Saved VarnamalaExercise:', saved._id);
+        } else if (exerciseType === 'handwriting') {
+          console.log('Creating TeluguHandwritingExercise with data:', exercise);
+          const newExercise = new TeluguHandwritingExercise({
+            ...exercise,
+            createdBy: req.user?.id || 'system'
+          });
+          saved = await newExercise.save();
+          console.log('Saved TeluguHandwritingExercise:', saved._id);
         } else {
           const newExercise = new SentenceFormationExercise({
             ...exercise,
@@ -490,6 +515,11 @@ router.get('/template/:type', auth, requireRole(['trainer', 'admin']), (req, res
     case 'sentence-formation':
       template = 'sentence_type,source_sentence,target_meaning,difficulty\nen-te,I am going to school,నేను పాఠశాలకు వెళుతున్నాను,easy\nen-te,Guests came to our house,మా ఇంటికి అతిథులు వచ్చారు,medium\nte-en,నేను పాఠశాలకు వెళుతున్నాను,I am going to school,easy\nte-en,మా ఇంటికి అతిథులు వచ్చారు,Guests came to our house,medium';
       filename = 'sentence-formation-template.csv';
+      break;
+      
+    case 'handwriting':
+      template = 'telugu_word,english_meaning,difficulty\nకమలం,lotus,easy\nపుస్తకం,book,medium\nవిద్యార్థి,student,hard';
+      filename = 'handwriting-template.csv';
       break;
       
     default:
@@ -603,10 +633,15 @@ router.get('/learner/exercises/:type', auth, requireRole(['learner', 'trainer', 
         .limit(parseInt(limit))
         .sort({ createdAt: -1 })
         .select('exerciseType sourceSentence targetMeaning difficulty words isActive createdAt');
+    } else if (type === 'handwriting') {
+      exercises = await TeluguHandwritingExercise.find({ isActive: true })
+        .limit(parseInt(limit))
+        .sort({ createdAt: -1 })
+        .select('teluguWord englishMeaning difficulty audioUrl isActive createdAt');
     } else {
       return res.status(400).json({
         success: false,
-        message: 'Invalid exercise type. Must be one of: varnamala, sentence-formation'
+        message: 'Invalid exercise type. Must be one of: varnamala, sentence-formation, handwriting'
       });
     }
     
