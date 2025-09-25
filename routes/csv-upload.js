@@ -338,6 +338,7 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
     
     // Save exercises to database
     console.log('About to save exercises. Type:', exerciseType, 'Count:', processedData.length);
+    console.log('User info:', { userId: req.user?.id, user: req.user });
     const savedExercises = [];
     const saveErrors = [];
     
