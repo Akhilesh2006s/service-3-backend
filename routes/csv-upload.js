@@ -339,6 +339,8 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
     // Save exercises to database
     console.log('About to save exercises. Type:', exerciseType, 'Count:', processedData.length);
     const savedExercises = [];
+    const saveErrors = [];
+    
     for (const exercise of processedData) {
       try {
         let saved;
@@ -361,8 +363,19 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
       } catch (error) {
         console.error('Error saving exercise:', error);
         console.error('Exercise data that failed:', exercise);
+        saveErrors.push({
+          exercise: exercise,
+          error: error.message
+        });
       }
     }
+    
+    console.log('Save results:', {
+      totalProcessed: processedData.length,
+      savedCount: savedExercises.length,
+      errorCount: saveErrors.length,
+      errors: saveErrors
+    });
     
     // Clean up uploaded file
     fs.unlinkSync(req.file.path);
@@ -378,7 +391,9 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
           csvRows: csvData.length,
           processedDataLength: processedData.length,
           validationPassed: validation.valid,
-          validationErrors: validation.errors
+          validationErrors: validation.errors,
+          saveErrors: saveErrors,
+          saveErrorCount: saveErrors.length
         }
       }
     });
