@@ -296,14 +296,23 @@ learningProgressSchema.methods.updateOverallStats = function() {
   const allCompleted = [
     ...this.dictation.completedExercises,
     ...this.sentenceFormation.completedExercises,
-    ...this.spelling.completedExercises
+    ...this.spelling.completedExercises,
+    ...(this.handwriting ? this.handwriting.completedExercises : [])
   ];
 
   this.overallStats.totalExercisesCompleted = allCompleted.length;
   
   if (allCompleted.length > 0) {
     this.overallStats.averageScore = allCompleted.reduce(
-      (sum, ex) => sum + ex.score, 0
+      (sum, ex) => {
+        // Handle different exercise types
+        if (ex.score !== undefined) {
+          return sum + ex.score;
+        } else if (ex.isCorrect !== undefined) {
+          return sum + (ex.isCorrect ? 1 : 0);
+        }
+        return sum;
+      }, 0
     ) / allCompleted.length;
   }
 
@@ -380,6 +389,22 @@ learningProgressSchema.methods.resetModuleProgress = function(moduleName) {
   }
 
   this.updateOverallStats();
+};
+
+// Method to calculate overall average score
+learningProgressSchema.methods.calculateOverallAverage = function() {
+  const modules = ['dictation', 'sentenceFormation', 'spelling', 'handwriting'];
+  let totalScore = 0;
+  let totalAttempts = 0;
+  
+  modules.forEach(module => {
+    if (this[module]) {
+      totalScore += this[module].totalScore || 0;
+      totalAttempts += this[module].totalAttempts || 0;
+    }
+  });
+  
+  return totalAttempts > 0 ? (totalScore / totalAttempts) * 100 : 0;
 };
 
 export default mongoose.model('LearningProgress', learningProgressSchema);
