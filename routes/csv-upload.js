@@ -535,4 +535,49 @@ router.delete('/exercises/:id', auth, requireRole(['trainer', 'admin']), async (
   }
 });
 
+// Get exercises for learners (read-only access)
+router.get('/learner/exercises/:type', auth, requireRole(['learner', 'trainer', 'admin']), async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { limit = 100 } = req.query;
+    
+    console.log(`📚 Learner requesting ${type} exercises, limit: ${limit}`);
+    
+    let exercises = [];
+    
+    if (type === 'varnamala') {
+      exercises = await VarnamalaExercise.find({ isActive: true })
+        .limit(parseInt(limit))
+        .sort({ createdAt: -1 })
+        .select('teluguWord englishMeaning difficulty letters isActive createdAt');
+    } else if (type === 'sentence-formation') {
+      exercises = await SentenceFormationExercise.find({ isActive: true })
+        .limit(parseInt(limit))
+        .sort({ createdAt: -1 })
+        .select('exerciseType sourceSentence targetMeaning difficulty words isActive createdAt');
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid exercise type. Must be one of: varnamala, sentence-formation'
+      });
+    }
+    
+    console.log(`📚 Found ${exercises.length} ${type} exercises for learner`);
+    
+    res.json({
+      success: true,
+      data: exercises,
+      count: exercises.length
+    });
+    
+  } catch (error) {
+    console.error('Error fetching exercises for learner:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching exercises',
+      error: error.message
+    });
+  }
+});
+
 export default router;
