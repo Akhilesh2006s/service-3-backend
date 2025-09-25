@@ -114,6 +114,17 @@ const validateCSVData = (data, type) => {
       });
       break;
       
+    case 'varnamala':
+      data.forEach((row, index) => {
+        if (!row.telugu_word || !row.english_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (telugu_word, english_meaning, difficulty)`);
+        }
+        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
+          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
+        }
+      });
+      break;
+      
     default:
       errors.push('Invalid exercise type');
   }
@@ -202,10 +213,10 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
 
     const { exerciseType } = req.body;
     
-    if (!exerciseType || !['dictation', 'sentence-formation', 'te-en', 'en-te'].includes(exerciseType)) {
+    if (!exerciseType || !['dictation', 'sentence-formation', 'te-en', 'en-te', 'varnamala'].includes(exerciseType)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation, te-en, en-te'
+        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation, te-en, en-te, varnamala'
       });
     }
 
