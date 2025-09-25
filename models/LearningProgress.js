@@ -98,6 +98,38 @@ const learningProgressSchema = new mongoose.Schema({
     }
   },
 
+  // Handwriting Progress
+  handwriting: {
+    completedExercises: [{
+      exerciseId: String,
+      isCorrect: Boolean,
+      attempts: {
+        type: Number,
+        default: 1
+      },
+      lastAttempted: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    totalScore: {
+      type: Number,
+      default: 0
+    },
+    totalAttempts: {
+      type: Number,
+      default: 0
+    },
+    correctAnswers: {
+      type: Number,
+      default: 0
+    },
+    lastAccessed: {
+      type: Date,
+      default: Date.now
+    }
+  },
+
   // Overall Statistics
   overallStats: {
     totalExercisesCompleted: {
@@ -307,6 +339,13 @@ learningProgressSchema.methods.getProgressSummary = function() {
       totalScore: this.spelling.totalScore,
       totalAttempts: this.spelling.totalAttempts,
       lastAccessed: this.spelling.lastAccessed
+    },
+    handwriting: {
+      completed: this.handwriting ? this.handwriting.completedExercises.length : 0,
+      totalScore: this.handwriting ? this.handwriting.totalScore : 0,
+      totalAttempts: this.handwriting ? this.handwriting.totalAttempts : 0,
+      correctAnswers: this.handwriting ? this.handwriting.correctAnswers : 0,
+      lastAccessed: this.handwriting ? this.handwriting.lastAccessed : null
     },
     overall: this.overallStats
   };

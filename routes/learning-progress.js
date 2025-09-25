@@ -141,11 +141,92 @@ router.post('/spelling', auth, async (req, res) => {
   }
 });
 
+// Update handwriting progress
+router.post('/handwriting', auth, async (req, res) => {
+  try {
+    const { exerciseId, isCorrect, attempts = 1 } = req.body;
+
+    if (exerciseId === undefined || isCorrect === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'exerciseId and isCorrect are required'
+      });
+    }
+
+    let progress = await LearningProgress.findOne({ userId: req.user.id });
+    
+    if (!progress) {
+      progress = new LearningProgress({
+        userId: req.user.id
+      });
+    }
+
+    // Update handwriting progress (similar to other exercise types)
+    if (!progress.handwriting) {
+      progress.handwriting = {
+        completedExercises: [],
+        totalScore: 0,
+        totalAttempts: 0,
+        correctAnswers: 0
+      };
+    }
+
+    const existingExercise = progress.handwriting.completedExercises.find(
+      ex => ex.exerciseId === exerciseId
+    );
+
+    if (existingExercise) {
+      existingExercise.attempts += attempts;
+      existingExercise.isCorrect = isCorrect;
+      existingExercise.lastAttempted = new Date();
+    } else {
+      progress.handwriting.completedExercises.push({
+        exerciseId,
+        isCorrect,
+        attempts,
+        lastAttempted: new Date()
+      });
+    }
+
+    progress.handwriting.totalAttempts += attempts;
+    if (isCorrect) {
+      progress.handwriting.correctAnswers += 1;
+      progress.handwriting.totalScore += 1;
+    }
+
+    // Update overall stats
+    progress.overallStats.totalExercisesCompleted += 1;
+    progress.overallStats.lastActivity = new Date();
+    progress.overallStats.averageScore = progress.calculateOverallAverage();
+
+    await progress.save();
+
+    res.json({
+      success: true,
+      data: {
+        handwriting: {
+          totalScore: progress.handwriting.totalScore,
+          totalAttempts: progress.handwriting.totalAttempts,
+          correctAnswers: progress.handwriting.correctAnswers,
+          completedExercises: progress.handwriting.completedExercises.length
+        }
+      },
+      message: 'Handwriting progress updated successfully'
+    });
+  } catch (error) {
+    console.error('Update handwriting progress error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update handwriting progress'
+    });
+  }
+});
+
 // Reset progress for a specific module
 router.post('/reset/:module', auth, async (req, res) => {
   try {
     const { module } = req.params;
-    const validModules = ['dictation', 'sentenceFormation', 'spelling'];
+    const validModules = ['dictation', 'sentenceFormation', 'spelling', 'handwriting'];
 
     if (!validModules.includes(module)) {
       return res.status(400).json({
