@@ -72,5 +72,17 @@
     "isActive": true,
     "createdAt": "2025-08-06T14:32:46.756Z",
     "updatedAt": "2025-08-06T14:32:46.756Z"
+  },
+  "test-user-123": {
+    "_id": "test-user-123",
+    "name": "Test Learner",
+    "email": "learner@test.com",
+    "phone": "1234567890",
+    "password": "$2a$10$0E65Xldv9DfOJHOu/yBtp.edwAbaEoDmE4t5tIyhgYjIf../vVKD.",
+    "role": "learner",
+    "isVerified": true,
+    "isActive": true,
+    "createdAt": "2025-09-25T16:31:24.183Z",
+    "updatedAt": "2025-09-25T16:31:24.183Z"
   }
 }
