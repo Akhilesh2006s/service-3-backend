@@ -306,6 +306,7 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
     console.log('File:', req.file);
     console.log('Body:', req.body);
     console.log('Headers:', req.headers);
+    console.log('Handwriting exercise support: ENABLED');
     
     if (!req.file) {
       return res.status(400).json({
