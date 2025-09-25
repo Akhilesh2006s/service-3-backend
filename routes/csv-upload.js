@@ -422,7 +422,9 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
         } else if (exerciseType === 'handwriting') {
           console.log('Creating TeluguHandwritingExercise with data:', exercise);
           const newExercise = new TeluguHandwritingExercise({
-            ...exercise,
+            teluguWord: exercise.teluguWord,
+            englishMeaning: exercise.englishMeaning,
+            difficulty: exercise.difficulty,
             createdBy: req.user?.id || 'system'
           });
           saved = await newExercise.save();
