@@ -266,6 +266,57 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
   }
 });
 
+// Get exercises endpoint
+router.get('/exercises/:type', auth, requireRole(['trainer', 'admin']), async (req, res) => {
+  try {
+    const { type } = req.params;
+    
+    // For now, return mock data since we don't have a database yet
+    // In a real implementation, you would fetch from your database
+    const mockExercises = [
+      {
+        _id: '1',
+        sentenceType: 'te-en',
+        sourceSentence: 'నేను పాఠశాలకు వెళుతున్నాను',
+        targetMeaning: 'I am going to school',
+        difficulty: 'easy',
+        words: {
+          original: ['నేను', 'పాఠశాలకు', 'వెళుతున్నాను'],
+          jumbled: ['వెళుతున్నాను', 'నేను', 'పాఠశాలకు'],
+          correctOrder: [1, 0, 2]
+        },
+        isActive: true,
+        createdAt: new Date().toISOString()
+      },
+      {
+        _id: '2',
+        sentenceType: 'en-te',
+        sourceSentence: 'I am going to school',
+        targetMeaning: 'నేను పాఠశాలకు వెళుతున్నాను',
+        difficulty: 'easy',
+        words: {
+          original: ['I', 'am', 'going', 'to', 'school'],
+          jumbled: ['school', 'I', 'am', 'going', 'to'],
+          correctOrder: [1, 2, 3, 4, 0]
+        },
+        isActive: true,
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    res.json({
+      success: true,
+      data: mockExercises
+    });
+  } catch (error) {
+    console.error('Error fetching exercises:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching exercises'
+    });
+  }
+});
+
 // Get CSV template endpoint
 router.get('/template/:type', auth, requireRole(['trainer', 'admin']), (req, res) => {
   const { type } = req.params;
