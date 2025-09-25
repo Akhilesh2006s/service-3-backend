@@ -201,34 +201,31 @@ const breakTeluguWordIntoComponents = (word) => {
   while (i < word.length) {
     const char = word[i];
     
-    // Check if this is a conjunct consonant pattern
-    if (i + 1 < word.length && word[i + 1] === '్') {
-      // This is a consonant with halant (్)
+    // Check if this is a conjunct consonant pattern: consonant + halant + vathu
+    if (i + 2 < word.length && word[i + 1] === '్') {
       const consonant = char;
       const halant = word[i + 1];
+      const nextChar = word[i + 2];
       
-      // Check if there's a vathu after halant
-      if (i + 2 < word.length) {
-        const nextChar = word[i + 2];
-        // Check if next char is a vathu (య, ర, ల, వ, etc.)
-        if (['య', 'ర', 'ల', 'వ', 'న', 'మ', 'ళ', 'ణ', 'ఞ', 'ఙ'].includes(nextChar)) {
-          // This is a conjunct consonant: combine as single unit
-          const conjunct = consonant + halant + nextChar;
-          components.push(conjunct);
-          i += 3;
-          continue;
-        }
+      // Check if next char is a vathu (య, ర, ల, వ, etc.)
+      if (['య', 'ర', 'ల', 'వ', 'న', 'మ', 'ళ', 'ణ', 'ఞ', 'ఙ'].includes(nextChar)) {
+        // This is a conjunct consonant: combine as single unit
+        const conjunct = consonant + halant + nextChar;
+        components.push(conjunct);
+        i += 3;
+        continue;
+      } else {
+        // Just consonant + halant (no vathu)
+        components.push(consonant);
+        components.push(halant);
+        i += 2;
+        continue;
       }
-      
-      // Just consonant + halant
-      components.push(consonant);
-      components.push(halant);
-      i += 2;
-    } else {
-      // Regular character (vowel, consonant with inherent vowel, etc.)
-      components.push(char);
-      i++;
     }
+    
+    // Regular character (vowel, consonant with inherent vowel, etc.)
+    components.push(char);
+    i++;
   }
   
   return components;
