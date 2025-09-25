@@ -115,14 +115,22 @@ const validateCSVData = (data, type) => {
       break;
       
     case 'varnamala':
+      console.log('Validating varnamala data, rows:', data.length);
       data.forEach((row, index) => {
+        console.log(`Row ${index + 1}:`, row);
         if (!row.telugu_word || !row.english_meaning || !row.difficulty) {
+          console.log(`Row ${index + 1} missing fields:`, {
+            telugu_word: row.telugu_word,
+            english_meaning: row.english_meaning,
+            difficulty: row.difficulty
+          });
           errors.push(`Row ${index + 1}: Missing required fields (telugu_word, english_meaning, difficulty)`);
         }
         if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
           errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
         }
       });
+      console.log('Varnamala validation errors:', errors);
       break;
       
     default:
@@ -240,7 +248,9 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
     }
 
     // Process data for exercises
+    console.log('Processing exercises, exerciseType:', exerciseType);
     const processedData = csvData.map((row, index) => {
+      console.log(`Processing row ${index + 1}:`, row);
       const exercise = {
         id: `${exerciseType}-${Date.now()}-${index}`,
         type: exerciseType,
@@ -259,6 +269,7 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
           exercise.teluguWord = row.telugu_word;
           exercise.englishMeaning = row.english_meaning;
           const varnamalaData = processVarnamalaWord(row.telugu_word);
+          console.log(`Varnamala data for ${row.telugu_word}:`, varnamalaData);
           exercise.letters = varnamalaData;
           break;
           
