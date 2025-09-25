@@ -212,10 +212,9 @@ const breakTeluguWordIntoComponents = (word) => {
         const nextChar = word[i + 2];
         // Check if next char is a vathu (య, ర, ల, వ, etc.)
         if (['య', 'ర', 'ల', 'వ', 'న', 'మ', 'ళ', 'ణ', 'ఞ', 'ఙ'].includes(nextChar)) {
-          // This is a conjunct consonant: consonant + halant + vathu
-          components.push(consonant);
-          components.push(halant);
-          components.push(nextChar);
+          // This is a conjunct consonant: combine as single unit
+          const conjunct = consonant + halant + nextChar;
+          components.push(conjunct);
           i += 3;
           continue;
         }
