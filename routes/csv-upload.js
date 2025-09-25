@@ -6,6 +6,7 @@ import path from 'path';
 import { auth, requireRole } from '../middleware/auth.js';
 import { fileURLToPath } from 'url';
 import SentenceFormationExercise from '../models/SentenceFormationExercise.js';
+import VarnamalaExercise from '../models/VarnamalaExercise.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -138,6 +139,41 @@ const processSentenceForExercise = (sentence, type) => {
   };
 };
 
+// Function to break Telugu word into individual letters and add random letters
+const processVarnamalaWord = (teluguWord) => {
+  // Break Telugu word into individual characters
+  const letters = teluguWord.split('').filter(char => char.trim() !== '');
+  
+  // Create correct order (0, 1, 2, ...)
+  const correctOrder = letters.map((_, index) => index);
+  
+  // Add some random Telugu letters for confusion
+  const randomLetters = [
+    'అ', 'ఆ', 'ఇ', 'ఈ', 'ఉ', 'ఊ', 'ఋ', 'ఎ', 'ఏ', 'ఐ', 'ఒ', 'ఓ', 'ఔ',
+    'క', 'ఖ', 'గ', 'ఘ', 'ఙ', 'చ', 'ఛ', 'జ', 'ఝ', 'ఞ', 'ట', 'ఠ', 'డ', 'ఢ', 'ణ',
+    'త', 'థ', 'ద', 'ధ', 'న', 'ప', 'ఫ', 'బ', 'భ', 'మ', 'య', 'ర', 'ల', 'వ', 'శ', 'ష', 'స', 'హ', 'ళ', 'క్ష', 'ఱ'
+  ];
+  
+  // Select 2-4 random letters (not already in the word)
+  const availableRandomLetters = randomLetters.filter(letter => !letters.includes(letter));
+  const selectedRandomLetters = availableRandomLetters
+    .sort(() => Math.random() - 0.5)
+    .slice(0, Math.min(4, Math.max(2, Math.floor(Math.random() * 3) + 2)));
+  
+  // Combine original letters with random letters
+  const allLetters = [...letters, ...selectedRandomLetters];
+  
+  // Create jumbled order (original letters + random letters)
+  const jumbledOrder = allLetters.map((_, index) => index).sort(() => Math.random() - 0.5);
+  
+  return {
+    original: letters,
+    jumbled: jumbledOrder.map(index => allLetters[index]),
+    correctOrder: correctOrder,
+    randomLetters: selectedRandomLetters
+  };
+};
+
 // Upload CSV file endpoint
 router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next) => {
   upload.single('file')(req, res, (err) => {
@@ -205,6 +241,13 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
           exercise.englishMeaning = row.english_meaning;
           break;
           
+        case 'varnamala':
+          exercise.teluguWord = row.telugu_word;
+          exercise.englishMeaning = row.english_meaning;
+          const varnamalaData = processVarnamalaWord(row.telugu_word);
+          exercise.letters = varnamalaData;
+          break;
+          
         case 'sentence-formation':
           exercise.sentenceType = row.sentence_type;
           exercise.sourceSentence = row.source_sentence;
@@ -237,11 +280,20 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), (req, res, next)
     const savedExercises = [];
     for (const exercise of processedData) {
       try {
-        const newExercise = new SentenceFormationExercise({
-          ...exercise,
-          createdBy: req.user.id
-        });
-        const saved = await newExercise.save();
+        let saved;
+        if (exerciseType === 'varnamala') {
+          const newExercise = new VarnamalaExercise({
+            ...exercise,
+            createdBy: req.user.id
+          });
+          saved = await newExercise.save();
+        } else {
+          const newExercise = new SentenceFormationExercise({
+            ...exercise,
+            createdBy: req.user.id
+          });
+          saved = await newExercise.save();
+        }
         savedExercises.push(saved);
       } catch (error) {
         console.error('Error saving exercise:', error);
@@ -296,6 +348,11 @@ router.get('/template/:type', auth, requireRole(['trainer', 'admin']), (req, res
       filename = 'dictation-template.csv';
       break;
       
+    case 'varnamala':
+      template = 'telugu_word,english_meaning,difficulty\nకమలం,lotus,easy\nపుస్తకం,book,medium\nవిద్యార్థి,student,hard';
+      filename = 'varnamala-template.csv';
+      break;
+      
     case 'sentence-formation':
       template = 'sentence_type,source_sentence,target_meaning,difficulty\nen-te,I am going to school,నేను పాఠశాలకు వెళుతున్నాను,easy\nen-te,Guests came to our house,మా ఇంటికి అతిథులు వచ్చారు,medium\nte-en,నేను పాఠశాలకు వెళుతున్నాను,I am going to school,easy\nte-en,మా ఇంటికి అతిథులు వచ్చారు,Guests came to our house,medium';
       filename = 'sentence-formation-template.csv';
@@ -330,15 +387,23 @@ router.get('/exercises/:type', auth, requireRole(['trainer', 'admin']), async (r
     // Calculate pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
     
-    // Fetch exercises from database
-    const exercises = await SentenceFormationExercise.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .populate('createdBy', 'name email');
-    
-    // Get total count
-    const total = await SentenceFormationExercise.countDocuments(query);
+    // Fetch exercises from appropriate database based on type
+    let exercises, total;
+    if (type === 'varnamala') {
+      exercises = await VarnamalaExercise.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('createdBy', 'name email');
+      total = await VarnamalaExercise.countDocuments(query);
+    } else {
+      exercises = await SentenceFormationExercise.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .populate('createdBy', 'name email');
+      total = await SentenceFormationExercise.countDocuments(query);
+    }
     
     res.json({
       success: true,
