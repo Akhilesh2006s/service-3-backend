@@ -73,21 +73,13 @@ const validateCSVData = (data, type) => {
       });
       break;
       
-    case 'sentence-formation-en-te':
+    case 'sentence-formation':
       data.forEach((row, index) => {
-        if (!row.english_sentence || !row.telugu_meaning || !row.difficulty) {
-          errors.push(`Row ${index + 1}: Missing required fields (english_sentence, telugu_meaning, difficulty)`);
+        if (!row.sentence_type || !row.source_sentence || !row.target_meaning || !row.difficulty) {
+          errors.push(`Row ${index + 1}: Missing required fields (sentence_type, source_sentence, target_meaning, difficulty)`);
         }
-        if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
-          errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
-        }
-      });
-      break;
-      
-    case 'sentence-formation-te-en':
-      data.forEach((row, index) => {
-        if (!row.telugu_sentence || !row.english_meaning || !row.difficulty) {
-          errors.push(`Row ${index + 1}: Missing required fields (telugu_sentence, english_meaning, difficulty)`);
+        if (row.sentence_type && !['en-te', 'te-en'].includes(row.sentence_type)) {
+          errors.push(`Row ${index + 1}: Invalid sentence_type. Must be 'en-te' or 'te-en'`);
         }
         if (row.difficulty && !['easy', 'medium', 'hard'].includes(row.difficulty.toLowerCase())) {
           errors.push(`Row ${index + 1}: Invalid difficulty level. Must be 'easy', 'medium', or 'hard'`);
@@ -132,10 +124,10 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('c
 
     const { exerciseType } = req.body;
     
-    if (!exerciseType || !['dictation', 'sentence-formation-en-te', 'sentence-formation-te-en'].includes(exerciseType)) {
+    if (!exerciseType || !['dictation', 'sentence-formation'].includes(exerciseType)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation-en-te, sentence-formation-te-en'
+        message: 'Invalid exercise type. Must be one of: dictation, sentence-formation'
       });
     }
 
@@ -171,16 +163,11 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('c
           exercise.englishMeaning = row.english_meaning;
           break;
           
-        case 'sentence-formation-en-te':
-          exercise.englishSentence = row.english_sentence;
-          exercise.teluguMeaning = row.telugu_meaning;
-          exercise.words = processSentenceForExercise(row.english_sentence, 'en-te');
-          break;
-          
-        case 'sentence-formation-te-en':
-          exercise.teluguSentence = row.telugu_sentence;
-          exercise.englishMeaning = row.english_meaning;
-          exercise.words = processSentenceForExercise(row.telugu_sentence, 'te-en');
+        case 'sentence-formation':
+          exercise.sentenceType = row.sentence_type;
+          exercise.sourceSentence = row.source_sentence;
+          exercise.targetMeaning = row.target_meaning;
+          exercise.words = processSentenceForExercise(row.source_sentence, row.sentence_type);
           break;
       }
 
@@ -233,14 +220,9 @@ router.get('/template/:type', auth, requireRole(['trainer', 'admin']), (req, res
       filename = 'dictation-template.csv';
       break;
       
-    case 'sentence-formation-en-te':
-      template = 'english_sentence,telugu_meaning,difficulty\nI am going to school,నేను పాఠశాలకు వెళుతున్నాను,easy\nGuests came to our house,మా ఇంటికి అతిథులు వచ్చారు,medium\nStudents are reading books,విద్యార్థులు పుస్తకాలు చదువుతున్నారు,hard';
-      filename = 'sentence-formation-en-te-template.csv';
-      break;
-      
-    case 'sentence-formation-te-en':
-      template = 'telugu_sentence,english_meaning,difficulty\nనేను పాఠశాలకు వెళుతున్నాను,I am going to school,easy\nమా ఇంటికి అతిథులు వచ్చారు,Guests came to our house,medium\nవిద్యార్థులు పుస్తకాలు చదువుతున్నారు,Students are reading books,hard';
-      filename = 'sentence-formation-te-en-template.csv';
+    case 'sentence-formation':
+      template = 'sentence_type,source_sentence,target_meaning,difficulty\nen-te,I am going to school,నేను పాఠశాలకు వెళుతున్నాను,easy\nen-te,Guests came to our house,మా ఇంటికి అతిథులు వచ్చారు,medium\nte-en,నేను పాఠశాలకు వెళుతున్నాను,I am going to school,easy\nte-en,మా ఇంటికి అతిథులు వచ్చారు,Guests came to our house,medium';
+      filename = 'sentence-formation-template.csv';
       break;
       
     default:
