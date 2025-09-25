@@ -113,7 +113,7 @@ const processSentenceForExercise = (sentence, type) => {
 };
 
 // Upload CSV file endpoint
-router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('csvFile'), async (req, res) => {
+router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -186,13 +186,16 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('c
       message: `Successfully processed ${processedData.length} exercises`,
       data: {
         exerciseType,
-        count: processedData.length,
+        processedCount: processedData.length,
         exercises: processedData
       }
     });
 
   } catch (error) {
     console.error('CSV upload error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Request body:', req.body);
+    console.error('Request file:', req.file);
     
     // Clean up uploaded file if it exists
     if (req.file && fs.existsSync(req.file.path)) {
@@ -202,7 +205,8 @@ router.post('/upload', auth, requireRole(['trainer', 'admin']), upload.single('c
     res.status(500).json({
       success: false,
       message: 'Error processing CSV file',
-      error: error.message
+      error: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
