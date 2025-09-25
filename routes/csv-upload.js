@@ -193,10 +193,54 @@ const processSentenceForExercise = (sentence, type) => {
   };
 };
 
+// Function to break Telugu word into proper conjunct consonant components
+const breakTeluguWordIntoComponents = (word) => {
+  const components = [];
+  let i = 0;
+  
+  while (i < word.length) {
+    const char = word[i];
+    
+    // Check if this is a conjunct consonant pattern
+    if (i + 1 < word.length && word[i + 1] === '్') {
+      // This is a consonant with halant (్)
+      const consonant = char;
+      const halant = word[i + 1];
+      
+      // Check if there's a vathu after halant
+      if (i + 2 < word.length) {
+        const nextChar = word[i + 2];
+        // Check if next char is a vathu (య, ర, ల, వ, etc.)
+        if (['య', 'ర', 'ల', 'వ', 'న', 'మ', 'ళ', 'ణ', 'ఞ', 'ఙ'].includes(nextChar)) {
+          // This is a conjunct consonant: consonant + halant + vathu
+          components.push(consonant);
+          components.push(halant);
+          components.push(nextChar);
+          i += 3;
+          continue;
+        }
+      }
+      
+      // Just consonant + halant
+      components.push(consonant);
+      components.push(halant);
+      i += 2;
+    } else {
+      // Regular character (vowel, consonant with inherent vowel, etc.)
+      components.push(char);
+      i++;
+    }
+  }
+  
+  return components;
+};
+
 // Function to break Telugu word into individual letters and add random letters
 const processVarnamalaWord = (teluguWord) => {
-  // Break Telugu word into individual characters
-  const letters = teluguWord.split('').filter(char => char.trim() !== '');
+  // Break Telugu word into proper conjunct consonant components
+  const letters = breakTeluguWordIntoComponents(teluguWord);
+  
+  console.log(`🔤 Processing word "${teluguWord}" into components:`, letters);
   
   // Create correct order (0, 1, 2, ...)
   const correctOrder = letters.map((_, index) => index);
